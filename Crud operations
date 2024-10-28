@@ -1,0 +1,66 @@
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from . import models, schemas
+from .database import engine, SessionLocal
+
+
+app = FastAPI()
+
+
+models.Base.metadata.create_all(bind=engine)
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.post("/blogs/", response_model=schemas.BlogResponse)
+def create_blog(blog_data: schemas.BlogCreate, db: Session = Depends(get_db)):
+    new_blog = models.Blog(title=blog_data.title, content=blog_data.content)
+    db.add(new_blog)
+    db.commit()
+    db.refresh(new_blog)
+    return new_blog  # Return the created blog post with ID
+
+
+@app.get("/blogs/", response_model=List[schemas.BlogResponse])
+def get_all_blogs(db: Session = Depends(get_db)):
+    blogs = db.query(models.Blog).all()
+    if not blogs:
+        raise HTTPException(status_code=404, detail="No blog posts found.")
+    return blogs
+
+
+@app.get("/blogs/{blog_id}", response_model=schemas.BlogResponse)
+def get_blog(blog_id: int, db: Session = Depends(get_db)):
+    blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
+    if blog is None:
+        raise HTTPException(status_code=404, detail=f"Blog post with ID {blog_id} not found.")
+    return blog
+
+
+@app.put("/blogs/{blog_id}", response_model=schemas.BlogResponse)
+def update_blog(blog_id: int, updated_data: schemas.BlogCreate, db: Session = Depends(get_db)):
+    blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
+    if blog is None:
+        raise HTTPException(status_code=404, detail=f"Blog post with ID {blog_id} not found.")
+    blog.title = updated_data.title
+    blog.content = updated_data.content
+    db.commit()
+    db.refresh(blog)
+    return blog
+
+
+@app.delete("/blogs/{blog_id}", response_model=dict)
+def delete_blog(blog_id: int, db: Session = Depends(get_db)):
+    blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
+    if blog is None:
+        raise HTTPException(status_code=404, detail=f"Blog post with ID {blog_id} not found.")
+    db.delete(blog)
+    db.commit()
+    return {"message": f"Blog post with ID {blog_id} deleted successfully"}
