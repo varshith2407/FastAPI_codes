@@ -1,13 +1,14 @@
-from sqlalchemy import Column,Integer,String
+from sqlalchemy import Column,Integer,String,Float,ForeignKey
 from database import Base
-
-
-class Blog(Base):
-     __tablename__ = 'blogs'
-
-     
-     name = Column(String)
-     id = Column(Integer,primary_key=True,index=True)
-     title = Column(String)
-     boby = Column(String)
-     name = Column(String)
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password = Column(String)  # Hashed password
+class Item(Base):
+    __tablename__ = "items"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String)
+    price = Column(Float)
+    owner_id = Column(Integer, ForeignKey("users.id"))
