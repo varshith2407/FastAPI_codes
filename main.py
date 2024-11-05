@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 from models import Users
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Annotated
+import auth
 
 app = FastAPI()
+app.include_router(auth.router)
 
 Users.metadata.create_all(bind=engine)
 
@@ -15,6 +17,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+db_dependency=Annotated[Session,Depends(get_db)]
 
 class UserSchema(BaseModel):
     id: int
