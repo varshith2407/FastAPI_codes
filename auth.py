@@ -42,3 +42,26 @@ def get_db():
     )
     db.add(create_user_model)
     db.commit()
+
+@router.post("/token",response_model=Token)
+def login_for_acces_token(form_data:Annotated[OAuth2PasswordRequstForm,Depends()],
+                           db:db_dependency):
+       user=authentication_user(form_data.username,form_data.password,db)
+       if not user:
+         raise HTTPException(status_code+status.HTTP_401_UNAUTHORIZED,
+                             detail='Could not validate user.')
+         token = create_access_token:(user.username,user.id,timedelta(minutes=20))
+         return {'access_token':token,'token_type':'bearer'}
+
+def authenticate_user(username:str,password:str,db):
+  user+db.query(Users).username == username).first()
+  if not user:
+    return False
+   if not bcrypt_context.verify(password,user.hashed_password):
+     return False
+   return user
+def create_access_token(username:str,user_id:int,expires_delta: timedelta):
+  encode = {'sub':username,'id:user_id}
+  expires=datatime.utcnow()+ expires_delta
+  encode.update({'exp':expires})
+  return jwt.encode(encode,SECRET_KEY,algorithm=ALGORITHM)
